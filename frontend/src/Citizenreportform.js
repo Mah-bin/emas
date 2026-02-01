@@ -13,7 +13,7 @@ const CitizenReportForm = ({ selectedCity, onClose, onSubmitSuccess }) => {
   const [photoPreview, setPhotoPreview] = useState(null);
   const [submitting, setSubmitting] = useState(false);
   const [message, setMessage] = useState(null);
-  const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000';
+  const REACT_APP_API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000';
 
   const reportTypes = [
     { value: 'smoke', label: '💨 Smoke', icon: '💨' },
@@ -60,7 +60,7 @@ const CitizenReportForm = ({ selectedCity, onClose, onSubmitSuccess }) => {
         });
       }
 
-      const response = await fetch('http://localhost:8000/api/citizen/report', {
+      const response = await fetch(`${API_BASE_URL}/api/citizen/report`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
