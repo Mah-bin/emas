@@ -37,7 +37,6 @@ L.Icon.Default.mergeOptions({
   shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
 });
 
-const API_BASE_URL = process.env.REACT_APP_API_BASE_URL;
 
 function App() {
   // --- 1. CITY SELECTION STATE ---
@@ -72,7 +71,7 @@ function App() {
   // Fetch monitor data from backend (Dynamic City)
   const fetchMonitorData = async () => {
     try {
-      const response = await fetch(`${API_BASE_URL}/api/monitor?city=${selectedCity}`);
+      const response = await fetch(`${process.env.REACT_APP_API_BASE_URL}/api/monitor?city=${selectedCity}`);
       if (!response.ok) throw new Error('Backend connection failed');
       const data = await response.json();
       console.log('Monitor data received:', data);
@@ -87,9 +86,15 @@ function App() {
   // Fetch historical data
   const fetchHistory = async () => {
     try {
-      const response = await fetch(`${API_BASE_URL}/api/history?limit=24`);
+      const response = await fetch(`${process.env.REACT_APP_API_BASE_URL}/api/history?limit=24`);
       if (!response.ok) throw new Error('History fetch failed');
       const data = await response.json();
+      console.log('History data received:', data);
+      console.log('Number of history records:', data.data?.length);
+      if (data.data && data.data.length > 0) {
+        console.log('Latest record:', data.data[0]);
+        console.log('Oldest record:', data.data[data.data.length - 1]);
+      }
       setHistoryData(data.data || []);
     } catch (err) {
       console.error('History fetch error:', err);
@@ -99,7 +104,7 @@ function App() {
   // Fetch sensor locations
   const fetchSensors = async () => {
     try {
-      const response = await fetch(`${API_BASE_URL}/api/sensors`);
+      const response = await fetch(`${process.env.REACT_APP_API_BASE_URL}/api/sensors`);
       if (!response.ok) throw new Error('Sensors fetch failed');
       const data = await response.json();
       setSensors(data.sensors || []);
@@ -111,7 +116,7 @@ function App() {
   // Fetch correlations
   const fetchCorrelations = async () => {
     try {
-      const response = await fetch(`${API_BASE_URL}/api/correlations`);
+      const response = await fetch(`${process.env.REACT_APP_API_BASE_URL}/api/correlations`);
       if (!response.ok) {
         console.warn('Correlations fetch failed (non-critical)');
         return;
@@ -242,6 +247,16 @@ function App() {
     }
   }, [monitorData?.risk_assessment?.alerts]);
 
+  // Debug: Log when history data updates
+  useEffect(() => {
+    console.log('📊 Chart data updated:', {
+      dataPoints: historyData.length,
+      latestPM25: historyData[0]?.pm25,
+      latestNoise: historyData[0]?.noise,
+      latestWind: historyData[0]?.wind_kph
+    });
+  }, [historyData]);
+
   const getStatus = (val, thresholds) => {
     if (val <= thresholds[0]) return { text: 'Safe', class: 'safe' };
     if (val <= thresholds[1]) return { text: 'Warning', class: 'warning' };
@@ -318,12 +333,26 @@ function App() {
   const chartOptions = {
     responsive: true,
     maintainAspectRatio: false,
+    animation: {
+      duration: 750,
+    },
     plugins: {
-      legend: { labels: { color: '#e5e7eb', font: { family: 'JetBrains Mono' } } }
+      legend: { 
+        labels: { 
+          color: '#e5e7eb', 
+          font: { family: 'JetBrains Mono' } 
+        } 
+      }
     },
     scales: {
-      y: { grid: { color: 'rgba(255, 255, 255, 0.1)' }, ticks: { color: '#9ca3af' } },
-      x: { grid: { display: false }, ticks: { color: '#9ca3af' } }
+      y: { 
+        grid: { color: 'rgba(255, 255, 255, 0.1)' }, 
+        ticks: { color: '#9ca3af' } 
+      },
+      x: { 
+        grid: { display: false }, 
+        ticks: { color: '#9ca3af', maxRotation: 45, minRotation: 45 } 
+      }
     }
   };
 
@@ -584,12 +613,44 @@ function App() {
 
         {/* Right: Trend Chart */}
         <div className="chart-card">
-          <div className="section-header"><h2 className="section-title">📊 Live Trends</h2></div>
+          <div className="section-header">
+            <h2 className="section-title">📊 Live Trends</h2>
+            <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
+              {historyData.length} data points • Updates every 5s
+            </span>
+          </div>
           <div style={{ height: '350px' }}>
             {historyData.length > 0 ? (
-              <Line options={chartOptions} data={chartData} />
+              <Line 
+                key={`chart-${historyData.length}-${historyData[0]?.timestamp}`} 
+                options={chartOptions} 
+                data={chartData} 
+              />
             ) : (
-              <p style={{ textAlign: 'center', color: 'var(--text-secondary)', paddingTop: '150px' }}>Collecting historical data...</p>
+              <div style={{ textAlign: 'center', paddingTop: '120px' }}>
+                <div style={{ fontSize: '48px', marginBottom: '16px' }}>📊</div>
+                <p style={{ color: 'var(--text-secondary)', fontSize: '16px', marginBottom: '8px' }}>
+                  Collecting historical data...
+                </p>
+                <p style={{ color: 'var(--text-muted)', fontSize: '13px' }}>
+                  Chart will appear after data is logged
+                </p>
+                <div style={{ 
+                  marginTop: '20px', 
+                  display: 'inline-flex', 
+                  alignItems: 'center', 
+                  gap: '8px',
+                  padding: '8px 16px',
+                  background: 'rgba(59, 130, 246, 0.1)',
+                  border: '1px solid #3b82f6',
+                  borderRadius: '6px',
+                  color: '#3b82f6',
+                  fontSize: '12px'
+                }}>
+                  <div className="status-dot" style={{ background: '#3b82f6' }}></div>
+                  Monitoring active
+                </div>
+              </div>
             )}
           </div>
         </div>
