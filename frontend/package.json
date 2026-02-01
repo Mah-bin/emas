@@ -2,7 +2,7 @@
   "name": "environmental-monitoring-frontend",
   "version": "1.0.0",
   "private": true,
-  "homepage": "https://Mah-bin.github.io/EMAS",
+  "homepage": "/",
   "dependencies": {
     "chart.js": "^4.4.0",
     "leaflet": "^1.9.4",
